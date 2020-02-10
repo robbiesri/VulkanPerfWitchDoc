@@ -1,0 +1,20 @@
+{ 
+    "file_format_version" : "1.1.0", 
+    "layer" : { 
+        "name": "VK_LAYER_PERFHAUS_GPUVoyeur", 
+        "type": "GLOBAL", 
+        "library_path": "./libGPUVoyeur.so", 
+        "api_version": "1.1.77", 
+        "implementation_version": "1", 
+        "description": "Google's coarse profiling layer for da GPU", 
+        "enable_environment": {
+            "ENABLE_GPUVOYEUR": "1"
+        },
+        "disable_environment": {
+            "DISABLE_GPUVOYEUR": "1"
+        },
+        "functions": {
+            "vkNegotiateLoaderLayerInterfaceVersion": "GvNegotiateLoaderLayerInterfaceVersion"
+        }  
+    } 
+} 
