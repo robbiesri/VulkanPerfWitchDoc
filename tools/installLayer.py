@@ -18,7 +18,7 @@ if os.name == 'nt':
 
 
 def linuxLayerPathSearch(layerMode):
-    print '    GPUVoyeur - Searching known layer JSON directories for possible install destination'
+    print '    WitchDoctor - Searching known layer JSON directories for possible install destination'
 
     searchFolder = layerMode + '_layer.d'
     
@@ -35,14 +35,14 @@ def linuxLayerPathSearch(layerMode):
             json_files = [pos_json for pos_json in os.listdir(searchPath) if pos_json.endswith('.json')]
 
             if json_files:
-                print '    GPUVoyeur - Candidate install path for layer JSON found: ' + searchPath
+                print '    WitchDoctor - Candidate install path for layer JSON found: ' + searchPath
                 return searchPath
 
     return None
 
 
 
-parser = argparse.ArgumentParser(description='Install the GPUVoyeur layer onto your system.')
+parser = argparse.ArgumentParser(description='Install the WitchDoctor layer onto your system.')
 
 parser.add_argument('--layerMode', type=str, dest='mode',
                     default='explicit', 
@@ -51,18 +51,14 @@ parser.add_argument('--layerMode', type=str, dest='mode',
 parser.add_argument('--layerSearchPath', type=str, dest='searchPath',
                     help="(LINUX ONLY) Specify the layer search path, if in non-traditional location.")
 
-parser.add_argument('--configInstallPath', type=str, dest='configPath',
-                    help="Specify the complete PerfHaus.cfg install path (default: ~/VkPerfHaus/PerfHaus.cfg).")
-
-
 args = parser.parse_args()
 
-print "Starting GPUVoyeur layer installation..."
+print "Starting WitchDoctor layer installation..."
 
 # Copy layer JSON into the bin folder
 
 layerMode = args.mode
-print "    GPUVoyeur - Layer Mode: " + layerMode
+print "    WitchDoctor - Layer Mode: " + layerMode
 
 if layerMode == "explicit" or layerMode == "exp" or layerMode == "e":
     layerMode = 'explicit'
@@ -81,13 +77,13 @@ scriptFilePath = os.path.abspath(os.path.realpath(__file__))
 toolsPath = os.path.dirname(scriptFilePath)
 rootPath = os.path.dirname(toolsPath)
 
-destLayerFilePath = os.path.join(rootPath, 'bin', osDir, 'VkLayer_GPUVoyeur.json')
+destLayerFilePath = os.path.join(rootPath, 'bin', osDir, 'VkLayer_WitchDoctor.json')
 
-sourceFileName = "VkLayer_GPUVoyeur_" + layerMode + ".json"
+sourceFileName = "VkLayer_WitchDoctor_" + layerMode + ".json"
 sourceLayerFilePath = os.path.join(rootPath, 'resources', osDir, sourceFileName)
 
-print "    GPUVoyeur - Layer Source: " + sourceLayerFilePath
-print "    GPUVoyeur - Layer Dest: " + destLayerFilePath
+print "    WitchDoctor - Layer Source: " + sourceLayerFilePath
+print "    WitchDoctor - Layer Dest: " + destLayerFilePath
 
 shutil.copyfile(sourceLayerFilePath, destLayerFilePath)
 
@@ -95,7 +91,7 @@ shutil.copyfile(sourceLayerFilePath, destLayerFilePath)
 
 if osStr == "Windows":
     
-    print "    GPUVoyeur - Adding layer key to registry"
+    print "    WitchDoctor - Adding layer key to registry"
 
     regPath = r"SOFTWARE\Khronos\Vulkan"
     if layerMode == "implicit":
@@ -110,7 +106,7 @@ if osStr == "Windows":
     _winreg.CloseKey(regKey)
 else:
     
-    print "    GPUVoyeur - Copying layer JSON to layer search directory"
+    print "    WitchDoctor - Copying layer JSON to layer search directory"
 
     searchPath = None
     if args.searchPath:
@@ -128,7 +124,7 @@ else:
 
     # we have to edit the path to be absolute
 
-    libFilePath = os.path.join(rootPath, 'bin', osDir, 'libGPUVoyeur.so')
+    libFilePath = os.path.join(rootPath, 'bin', osDir, 'libStadiaPerfLayer.so')
     with open(layerJsonInstallPath, 'r+') as f:
         data = json.load(f)
         data['layer']['library_path'] = libFilePath
@@ -136,21 +132,6 @@ else:
         json.dump(data, f, indent=4)
         f.truncate()
 
-    print "    GPUVoyeur - Layer JSON copied to " + layerJsonInstallPath
+    print "    WitchDoctor - Layer JSON copied to " + layerJsonInstallPath
 
-# print "Setting up PerfHaus.cfg..."
-# home = os.path.expanduser("~")
-
-# defaultConfigPath = home + "/VkPerfHaus/PerfHaus.cfg"
-# sampleConfigPath = os.path.join(rootPath, 'resources', 'sample_PerfHaus.cfg')
-
-# configPath = defaultConfigPath
-# if args.configPath:
-#     configPath = args.configPath
-
-# print "    GPUVoyeur - Sample Config Source: " + sampleConfigPath
-# print "    GPUVoyeur - Config Dest: " + configPath
-# shutil.copyfile(sampleConfigPath, configPath)
-
-
-print "GPUVoyeur layer installation complete!"
+print "WitchDoctor layer installation complete!"

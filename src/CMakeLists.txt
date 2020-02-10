@@ -27,8 +27,8 @@ file(MAKE_DIRECTORY ${BIN_DIR})
 
 message(STATUS "Generating post-build command to copy JSON to bin")
 
-file(TO_NATIVE_PATH ${CMAKE_SOURCE_DIR}/resources/${CMAKE_SYSTEM_NAME}/VkLayer_GPUVoyeur_explicit.json SOURCE_LAYER_JSON)
-file(TO_NATIVE_PATH ${BIN_DIR}/VkLayer_GPUVoyeur.json DEST_LAYER_JSON)
+file(TO_NATIVE_PATH ${CMAKE_SOURCE_DIR}/resources/${CMAKE_SYSTEM_NAME}/VkLayer_WitchDoctor_explicit.json SOURCE_LAYER_JSON)
+file(TO_NATIVE_PATH ${BIN_DIR}/VkLayer_WitchDoctor.json DEST_LAYER_JSON)
 
 add_custom_command(TARGET ${target_name} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
