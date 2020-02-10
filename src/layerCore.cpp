@@ -5,6 +5,7 @@
 #include <mutex>
 #include <unordered_map>
 
+#include "WitchDoc.h"
 #include "layerCore.h"
 
 namespace GWD {
@@ -54,7 +55,7 @@ static VkLayerDispatchTable * s_global_dispatch_table = nullptr;
 typedef void *dispatch_key;
 static inline dispatch_key get_dispatch_key(const void *object) { return (dispatch_key) * (VkLayerDispatchTable **)object; }
 
-//static GPUVoyeur GPUVoyeur_inst;
+static WitchDoctor WitchDoc_inst;
 
 // Layer helper for external clients to dispatch
 PFN_vkVoidFunction GwdGetDispatchedDeviceProcAddr(VkDevice device, const char* pName)
@@ -350,7 +351,7 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(const VkInstanceCreateInfo* pCr
         s_instance_dt[*pInstance] = dispatch_table;
     }
 
-    //GPUVoyeur_inst.PostCallCreateInstance(pCreateInfo, pAllocator, pInstance);
+    WitchDoc_inst.PostCallCreateInstance(pCreateInfo, pAllocator, pInstance);
 
     return result;
 }
@@ -425,7 +426,7 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(VkPhysicalDevice physicalDevice, 
         }
     }
 
-    //GPUVoyeur_inst.PostCallCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+    WitchDoc_inst.PostCallCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
 
     return result;
 }
