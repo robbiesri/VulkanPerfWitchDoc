@@ -24,6 +24,7 @@ PFN_vkVoidFunction WitchDoctor::GetInstanceProcAddr_DispatchHelper(const char *p
 void WitchDoctor::PopulateInstanceLayerBypassDispatchTable()
 {
     m_layerBypassDispatch.getPhysicalDeviceProperties = (PFN_vkGetPhysicalDeviceProperties)GetInstanceProcAddr_DispatchHelper("vkGetPhysicalDeviceProperties");
+    m_layerBypassDispatch.getPhysicalDeviceMemoryProperties = (PFN_vkGetPhysicalDeviceMemoryProperties)GetInstanceProcAddr_DispatchHelper("vkGetPhysicalDeviceMemoryProperties");
 }
 
 void WitchDoctor::PopulateDeviceLayerBypassDispatchTable()
@@ -44,5 +45,26 @@ VkResult WitchDoctor::PostCallCreateDevice(VkPhysicalDevice physicalDevice, cons
     m_device = *pDevice;
     PopulateDeviceLayerBypassDispatchTable();
 
+    m_layerBypassDispatch.getPhysicalDeviceMemoryProperties(physicalDevice, &m_physDevMemProps);
+
     return VK_SUCCESS;
+}
+
+VkResult WitchDoctor::PostCallAllocateMemory(const VkResult inResult, VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
+{
+    if (inResult != VK_SUCCESS) {
+        return inResult;
+    }
+
+    m_allocToMemTypeMap[*pMemory] = pAllocateInfo->memoryTypeIndex;
+
+    return VK_SUCCESS;
+}
+
+void WitchDoctor::PostCallFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
+{
+    if (m_allocToMemTypeMap.find(memory) != m_allocToMemTypeMap.end())
+    {
+        m_allocToMemTypeMap[memory] = UINT32_MAX;
+    }
 }

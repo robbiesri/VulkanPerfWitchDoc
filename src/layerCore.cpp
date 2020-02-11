@@ -108,13 +108,41 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdQueueSubmit(
     PFN_vkQueueSubmit fp_QueueSubmit = nullptr;
     fp_QueueSubmit = s_device_dt[device].QueueSubmit;
 
-    //GPUVoyeur_inst.PreCallQueueSubmit(queue, submitCount, pSubmits, fence);
-
     VkResult result = fp_QueueSubmit(queue, submitCount, pSubmits, fence);
 
-    //GPUVoyeur_inst.PostCallQueueSubmit(queue, submitCount, pSubmits, fence);
+    // TODO: Multiple VkSubmitInfo vs multiple VkCommandBuffer
+    //WitchDoc_inst.PostCallQueueSubmit(queue, submitCount, pSubmits, fence);
 
     return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GwdAllocateMemory(
+    VkDevice                                     device,
+    const VkMemoryAllocateInfo* pAllocateInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkDeviceMemory* pMemory)
+{
+    PFN_vkAllocateMemory fp_AllocateMemory = nullptr;
+    fp_AllocateMemory = s_device_dt[device].AllocateMemory;
+
+    VkResult result = fp_AllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+
+    result = WitchDoc_inst.PostCallAllocateMemory(result, device, pAllocateInfo, pAllocator, pMemory);
+
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL GwdFreeMemory(
+    VkDevice                                    device,
+    VkDeviceMemory                              memory,
+    const VkAllocationCallbacks*                pAllocator)
+{
+    PFN_vkFreeMemory fp_FreeMemory = nullptr;
+    fp_FreeMemory = s_device_dt[device].FreeMemory;
+
+    fp_FreeMemory(device, memory, pAllocator);
+
+    WitchDoc_inst.PostCallFreeMemory(device, memory, pAllocator);
 }
 
 // ----------------------------------------------------------------------------
@@ -415,6 +443,10 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(VkPhysicalDevice physicalDevice, 
         (PFN_vkGetDeviceQueue)next_gdpa(*pDevice, "vkGetDeviceQueue");
     dispatch_table.QueueSubmit =
         (PFN_vkQueueSubmit)next_gdpa(*pDevice, "vkQueueSubmit");
+    dispatch_table.AllocateMemory =
+        (PFN_vkAllocateMemory)next_gdpa(*pDevice, "vkAllocateMemory");
+    dispatch_table.FreeMemory =
+        (PFN_vkFreeMemory)next_gdpa(*pDevice, "vkFreeMemory");
 
     {
         LocalGuard lock(s_layer_mutex);
@@ -453,6 +485,8 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL GwdGetDeviceProcAddr(VkDevice device, c
     GWD_GETPROCADDR(DestroyDevice);
     GWD_GETPROCADDR(GetDeviceQueue);
     GWD_GETPROCADDR(QueueSubmit);
+    GWD_GETPROCADDR(AllocateMemory);
+    GWD_GETPROCADDR(FreeMemory);
 
     {
         LocalGuard lock(s_layer_mutex);
@@ -478,6 +512,8 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL GwdGetInstanceProcAddr(VkInstance insta
     GWD_GETPROCADDR(DestroyDevice);
     GWD_GETPROCADDR(GetDeviceQueue);
     GWD_GETPROCADDR(QueueSubmit);
+    GWD_GETPROCADDR(AllocateMemory);
+    GWD_GETPROCADDR(FreeMemory);
 
     {
         LocalGuard lock(s_layer_mutex);
