@@ -96,9 +96,6 @@ VKAPI_ATTR void VKAPI_CALL GwdGetDeviceQueue(VkDevice device,
     LocalGuard lock(s_layer_mutex);
     s_queue_device_map[*pQueue] = device;
   }
-
-  // GPUVoyeur_inst.PostCallGetDeviceQueue(device, queueFamilyIndex, queueIndex,
-  // pQueue);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL GwdQueueSubmit(VkQueue queue,
@@ -232,6 +229,36 @@ VKAPI_ATTR void VKAPI_CALL GwdFreeCommandBuffers(
       s_cmdbuf_device_map.erase(pCommandBuffers[cbIdx]);
     }
   }
+}
+
+VKAPI_ATTR void VKAPI_CALL GwdCmdBindIndexBuffer(VkCommandBuffer commandBuffer,
+                                                 VkBuffer buffer,
+                                                 VkDeviceSize offset,
+                                                 VkIndexType indexType) {
+  const VkDevice device = s_cmdbuf_device_map[commandBuffer];
+
+  PFN_vkCmdBindIndexBuffer fp_CmdBindIndexBuffer = nullptr;
+  fp_CmdBindIndexBuffer = s_device_dt[device].CmdBindIndexBuffer;
+
+  fp_CmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
+
+  WitchDoc_inst.PostCallCmdBindIndexBuffer(commandBuffer, buffer, offset,
+                                           indexType);
+}
+
+VKAPI_ATTR void VKAPI_CALL
+GwdCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount,
+    const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) {
+  const VkDevice device = s_cmdbuf_device_map[commandBuffer];
+
+  PFN_vkCmdBindVertexBuffers fp_CmdBindVertexBuffers = nullptr;
+  fp_CmdBindVertexBuffers = s_device_dt[device].CmdBindVertexBuffers;
+
+  fp_CmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers,
+                          pOffsets);
+
+  WitchDoc_inst.PostCallCmdBindVertexBuffers(commandBuffer, firstBinding,
+                                             bindingCount, pBuffers, pOffsets);
 }
 
 VKAPI_ATTR void VKAPI_CALL GwdCmdDraw(VkCommandBuffer commandBuffer,
@@ -474,8 +501,7 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdEnumerateDeviceExtensionProperties(
 // ----------------------------------------------------------------------------
 
 #define GWD_GETINSTDISPATCHADDR(func) \
-  dispatch_table.##func =             \
-      (PFN_vk##func)next_gipa(*pInstance, "vk" #func);
+  dispatch_table.##func = (PFN_vk##func)next_gipa(*pInstance, "vk" #func);
 
 VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
     const VkInstanceCreateInfo* pCreateInfo,
@@ -593,6 +619,8 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
   GWD_GETDEVDISPATCHADDR(CmdDrawIndexedIndirect);
   GWD_GETDEVDISPATCHADDR(AllocateCommandBuffers);
   GWD_GETDEVDISPATCHADDR(FreeCommandBuffers);
+  GWD_GETDEVDISPATCHADDR(CmdBindIndexBuffer);
+  GWD_GETDEVDISPATCHADDR(CmdBindVertexBuffers);
 
   {
     LocalGuard lock(s_layer_mutex);
@@ -644,6 +672,8 @@ GwdGetDeviceProcAddr(VkDevice device, const char* pName) {
   GWD_GETPROCADDR(CmdDrawIndexedIndirect);
   GWD_GETPROCADDR(AllocateCommandBuffers);
   GWD_GETPROCADDR(FreeCommandBuffers);
+  GWD_GETPROCADDR(CmdBindIndexBuffer);
+  GWD_GETPROCADDR(CmdBindVertexBuffers);
 
   {
     LocalGuard lock(s_layer_mutex);
@@ -681,6 +711,8 @@ GwdGetInstanceProcAddr(VkInstance instance, const char* pName) {
   GWD_GETPROCADDR(CmdDrawIndexedIndirect);
   GWD_GETPROCADDR(AllocateCommandBuffers);
   GWD_GETPROCADDR(FreeCommandBuffers);
+  GWD_GETPROCADDR(CmdBindIndexBuffer);
+  GWD_GETPROCADDR(CmdBindVertexBuffers);
 
   {
     LocalGuard lock(s_layer_mutex);

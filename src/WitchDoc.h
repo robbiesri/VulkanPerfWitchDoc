@@ -55,6 +55,14 @@ class WitchDoctor {
   void PostCallCmdDrawIndexedIndirect(VkCommandBuffer commandBuffer,
                                       VkBuffer buffer, VkDeviceSize offset,
                                       uint32_t drawCount, uint32_t stride);
+  void PostCallCmdBindIndexBuffer(VkCommandBuffer commandBuffer,
+                                  VkBuffer buffer, VkDeviceSize offset,
+                                  VkIndexType indexType);
+  void PostCallCmdBindVertexBuffers(VkCommandBuffer commandBuffer,
+                                    uint32_t firstBinding,
+                                    uint32_t bindingCount,
+                                    const VkBuffer* pBuffers,
+                                    const VkDeviceSize* pOffsets);
 
  protected:
   PFN_vkVoidFunction GetDeviceProcAddr_DispatchHelper(const char* pName);

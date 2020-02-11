@@ -134,6 +134,17 @@ void WitchDoctor::PostCallCmdDrawIndexedIndirect(VkCommandBuffer commandBuffer,
                                                  uint32_t drawCount,
                                                  uint32_t stride) {}
 
+void WitchDoctor::PostCallCmdBindIndexBuffer(VkCommandBuffer commandBuffer,
+                                             VkBuffer buffer,
+                                             VkDeviceSize offset,
+                                             VkIndexType indexType) {}
+
+void WitchDoctor::PostCallCmdBindVertexBuffers(VkCommandBuffer commandBuffer,
+                                               uint32_t firstBinding,
+                                               uint32_t bindingCount,
+                                               const VkBuffer* pBuffers,
+                                               const VkDeviceSize* pOffsets) {}
+
 // TODO: Match at BindVertexBuffer and BindIndexBuffer time
 // TODO: What about compute buffers?
 
