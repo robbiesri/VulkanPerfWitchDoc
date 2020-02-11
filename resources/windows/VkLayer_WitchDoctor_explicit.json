@@ -1,0 +1,14 @@
+{ 
+    "file_format_version" : "1.1.0", 
+    "layer" : { 
+        "name": "VK_LAYER_GOOGLE_witch_doctor", 
+        "type": "GLOBAL", 
+        "library_path": ".\\StadiaPerfLayer.dll", 
+        "api_version": "1.1.77", 
+        "implementation_version": "1", 
+        "description": "Google's magical GPU performance layer for (mostly) Stadia", 
+        "functions": {
+            "vkNegotiateLoaderLayerInterfaceVersion": "gwdNegotiateLoaderLayerInterfaceVersion"
+        }
+    } 
+} 
