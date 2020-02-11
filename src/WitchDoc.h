@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 
 #include <unordered_map>
+#include <vector>
 
 namespace GWD {
 
@@ -78,10 +79,14 @@ class WitchDoctor {
   VkDevice m_device = VK_NULL_HANDLE;
 
   VkPhysicalDeviceMemoryProperties m_physDevMemProps = {};
+  std::vector<bool> m_memTypeIsDeviceLocal;
 
   // TODO: Replace with my own data structure in the FUTURE
   std::unordered_map<VkDeviceMemory, uint32_t> m_allocToMemTypeMap;
   std::unordered_map<VkBuffer, uint32_t> m_bufferToMemTypeMap;
+
+  bool m_index_buffer_is_device_local = false;
+  bool m_vertex_buffers_are_device_local = false;
 };
 
 }  // namespace GWD

@@ -1,6 +1,8 @@
 #include "WitchDoc.h"
 #include "layerCore.h"
 
+#include <iostream>
+
 namespace GWD {
 
 PFN_vkVoidFunction WitchDoctor::GetDeviceProcAddr_DispatchHelper(
@@ -42,6 +44,14 @@ VkResult WitchDoctor::PostCallCreateDevice(
 
   m_layerBypassDispatch.getPhysicalDeviceMemoryProperties(physicalDevice,
                                                           &m_physDevMemProps);
+
+  m_memTypeIsDeviceLocal.resize(m_physDevMemProps.memoryTypeCount);
+  for (uint32_t mem_type_index = 0;
+       mem_type_index < m_physDevMemProps.memoryTypeCount; mem_type_index++) {
+    m_memTypeIsDeviceLocal[mem_type_index] =
+        ((m_physDevMemProps.memoryTypes[mem_type_index].propertyFlags &
+          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0);
+  }
 
   return VK_SUCCESS;
 }
@@ -116,36 +126,85 @@ VkResult WitchDoctor::PostCallBindBufferMemory2(
   return VK_SUCCESS;
 }
 
+// TODO: Report through debug_utils or stderr
+
 void WitchDoctor::PostCallCmdDraw(VkCommandBuffer commandBuffer,
                                   uint32_t vertexCount, uint32_t instanceCount,
                                   uint32_t firstVertex,
-                                  uint32_t firstInstance) {}
+                                  uint32_t firstInstance) {
+  if (!m_vertex_buffers_are_device_local) {
+    std::cout << "vkCmdDraw is using vertex buffers that are not DEVICE_LOCAL" << std::endl;
+  }
+}
 
 void WitchDoctor::PostCallCmdDrawIndexed(
     VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount,
-    uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {}
+    uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
+  if (!m_index_buffer_is_device_local) {
+    std::cout << "vkCmdDrawIndexed is using index buffer that is not DEVICE_LOCAL"
+              << std::endl;
+  }
+
+  if (!m_vertex_buffers_are_device_local) {
+    std::cout << "vkCmdDraw is using vertex buffers that are not DEVICE_LOCAL"
+              << std::endl;
+  }
+}
+
 void WitchDoctor::PostCallCmdDrawIndirect(VkCommandBuffer commandBuffer,
                                           VkBuffer buffer, VkDeviceSize offset,
                                           uint32_t drawCount, uint32_t stride) {
+  if (!m_vertex_buffers_are_device_local) {
+    std::cout << "vkCmdDrawIndirect is using vertex buffers that are not DEVICE_LOCAL"
+              << std::endl;
+  }
 }
 void WitchDoctor::PostCallCmdDrawIndexedIndirect(VkCommandBuffer commandBuffer,
                                                  VkBuffer buffer,
                                                  VkDeviceSize offset,
                                                  uint32_t drawCount,
-                                                 uint32_t stride) {}
+                                                 uint32_t stride) {
+  if (!m_index_buffer_is_device_local) {
+    std::cout
+        << "vkCmdDrawIndexedIndirect is using index buffer that is not DEVICE_LOCAL"
+        << std::endl;
+  }
+
+  if (!m_vertex_buffers_are_device_local) {
+    std::cout << "vkCmdDrawIndexedIndirect is using vertex buffers that are not DEVICE_LOCAL"
+              << std::endl;
+  }
+}
 
 void WitchDoctor::PostCallCmdBindIndexBuffer(VkCommandBuffer commandBuffer,
                                              VkBuffer buffer,
                                              VkDeviceSize offset,
-                                             VkIndexType indexType) {}
+                                             VkIndexType indexType) {
+  // TODO: Monitor for using VK_INDEX_TYPE_UINT32 if they don't have large index
+  // counts
+
+  uint32_t mem_type_index = m_bufferToMemTypeMap[buffer];
+  m_index_buffer_is_device_local =
+      (m_memTypeIsDeviceLocal[mem_type_index] == true);
+}
 
 void WitchDoctor::PostCallCmdBindVertexBuffers(VkCommandBuffer commandBuffer,
                                                uint32_t firstBinding,
                                                uint32_t bindingCount,
                                                const VkBuffer* pBuffers,
-                                               const VkDeviceSize* pOffsets) {}
+                                               const VkDeviceSize* pOffsets) {
+  bool all_buffers_device_local = true;
+  for (uint32_t buffer_index = 0; buffer_index < bindingCount; buffer_index++) {
+    VkBuffer buffer = pBuffers[buffer_index];
+    uint32_t mem_type_index = m_bufferToMemTypeMap[buffer];
+    if (m_memTypeIsDeviceLocal[mem_type_index] == false) {
+      all_buffers_device_local = false;
+      break;
+    }
+  }
+  m_vertex_buffers_are_device_local = all_buffers_device_local;
+}
 
-// TODO: Match at BindVertexBuffer and BindIndexBuffer time
 // TODO: What about compute buffers?
 
 }  // namespace GWD
