@@ -501,7 +501,7 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdEnumerateDeviceExtensionProperties(
 // ----------------------------------------------------------------------------
 
 #define GWD_GETINSTDISPATCHADDR(func) \
-  dispatch_table.##func = (PFN_vk##func)next_gipa(*pInstance, "vk" #func);
+  dispatch_table.func = (PFN_vk##func)next_gipa(*pInstance, "vk" #func);
 
 VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
     const VkInstanceCreateInfo* pCreateInfo,
@@ -560,7 +560,7 @@ VKAPI_ATTR void VKAPI_CALL GwdDestroyInstance(
 }
 
 #define GWD_GETDEVDISPATCHADDR(func) \
-  dispatch_table.##func = (PFN_vk##func)next_gdpa(*pDevice, "vk" #func);
+  dispatch_table.func = (PFN_vk##func)next_gdpa(*pDevice, "vk" #func);
 
 VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
     VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo,
