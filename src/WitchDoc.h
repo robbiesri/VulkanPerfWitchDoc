@@ -33,6 +33,10 @@ class WitchDoctor {
   VkResult PostCallBindBufferMemory(const VkResult inResult, VkDevice device,
                                     VkBuffer buffer, VkDeviceMemory memory,
                                     VkDeviceSize memoryOffset);
+  VkResult PostCallCreateBuffer(const VkResult inResult, VkDevice device,
+                                const VkBufferCreateInfo* pCreateInfo,
+                                const VkAllocationCallbacks* pAllocator,
+                                VkBuffer* pBuffer);
   void PostCallDestroyBuffer(VkDevice device, VkBuffer buffer,
                              const VkAllocationCallbacks* pAllocator);
   VkResult PostCallBindBufferMemory2(const VkResult inResult, VkDevice device,
@@ -56,6 +60,7 @@ class WitchDoctor {
 
   // TODO: Replace with my own data structure in the FUTURE
   std::unordered_map<VkDeviceMemory, uint32_t> m_allocToMemTypeMap;
+  std::unordered_map<VkBuffer, uint32_t> m_bufferToMemTypeMap;
 };
 
 }  // namespace GWD

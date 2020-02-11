@@ -74,12 +74,34 @@ VkResult WitchDoctor::PostCallBindBufferMemory(const VkResult inResult,
     return inResult;
   }
 
+  if (m_bufferToMemTypeMap.find(buffer) != m_bufferToMemTypeMap.end()) {
+    m_bufferToMemTypeMap[buffer] = m_allocToMemTypeMap[memory];
+  }
+
+  return VK_SUCCESS;
+}
+
+VkResult WitchDoctor::PostCallCreateBuffer(
+    const VkResult inResult, VkDevice device,
+    const VkBufferCreateInfo* pCreateInfo,
+    const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) {
+  if (inResult != VK_SUCCESS) {
+    return inResult;
+  }
+
+  if ((pCreateInfo->usage & (VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)) != 0) {
+    m_bufferToMemTypeMap[*pBuffer] = UINT32_MAX;
+  }
+
   return VK_SUCCESS;
 }
 
 void WitchDoctor::PostCallDestroyBuffer(
     VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) {
-
+  if (m_bufferToMemTypeMap.find(buffer) != m_bufferToMemTypeMap.end()) {
+    m_bufferToMemTypeMap.erase(buffer);
+  }
 }
 
 VkResult WitchDoctor::PostCallBindBufferMemory2(
@@ -91,5 +113,9 @@ VkResult WitchDoctor::PostCallBindBufferMemory2(
 
   return VK_SUCCESS;
 }
+
+// TODO: Match at BindVertexBuffer and BindIndexBuffer time
+// Defer to draw?
+// TODO: What about compute buffers?
 
 }  // namespace GWD

@@ -159,6 +159,20 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdBindBufferMemory(VkDevice device,
   return result;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL
+GwdCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo,
+                const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) {
+  PFN_vkCreateBuffer fp_CreateBuffer = nullptr;
+  fp_CreateBuffer = s_device_dt[device].CreateBuffer;
+
+  VkResult result = fp_CreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
+
+  result = WitchDoc_inst.PostCallCreateBuffer(result, device, pCreateInfo,
+                                              pAllocator, pBuffer);
+
+  return result;
+}
+
 VKAPI_ATTR void VKAPI_CALL GwdDestroyBuffer(
     VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) {
   PFN_vkDestroyBuffer fp_DestroyBuffer = nullptr;
@@ -478,6 +492,8 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
       (PFN_vkFreeMemory)next_gdpa(*pDevice, "vkFreeMemory");
   dispatch_table.BindBufferMemory =
       (PFN_vkBindBufferMemory)next_gdpa(*pDevice, "vkBindBufferMemory");
+  dispatch_table.CreateBuffer =
+      (PFN_vkCreateBuffer)next_gdpa(*pDevice, "vkCreateBuffer");
   dispatch_table.DestroyBuffer =
       (PFN_vkDestroyBuffer)next_gdpa(*pDevice, "vkDestroyBuffer");
   dispatch_table.BindBufferMemory2 =
@@ -522,6 +538,7 @@ GwdGetDeviceProcAddr(VkDevice device, const char* pName) {
   GWD_GETPROCADDR(AllocateMemory);
   GWD_GETPROCADDR(FreeMemory);
   GWD_GETPROCADDR(BindBufferMemory);
+  GWD_GETPROCADDR(CreateBuffer);
   GWD_GETPROCADDR(DestroyBuffer);
   GWD_GETPROCADDR(BindBufferMemory2);
 
@@ -552,6 +569,7 @@ GwdGetInstanceProcAddr(VkInstance instance, const char* pName) {
   GWD_GETPROCADDR(AllocateMemory);
   GWD_GETPROCADDR(FreeMemory);
   GWD_GETPROCADDR(BindBufferMemory);
+  GWD_GETPROCADDR(CreateBuffer);
   GWD_GETPROCADDR(DestroyBuffer);
   GWD_GETPROCADDR(BindBufferMemory2);
 
