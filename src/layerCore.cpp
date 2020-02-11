@@ -197,6 +197,105 @@ GwdBindBufferMemory2(VkDevice device, uint32_t bindInfoCount,
   return result;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL GwdAllocateCommandBuffers(
+    VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo,
+    VkCommandBuffer* pCommandBuffers) {
+  PFN_vkAllocateCommandBuffers fp_AllocateCommandBuffers = nullptr;
+  fp_AllocateCommandBuffers = s_device_dt[device].AllocateCommandBuffers;
+
+  VkResult result =
+      fp_AllocateCommandBuffers(device, pAllocateInfo, pCommandBuffers);
+
+  if (VK_SUCCESS == result) {
+    LocalGuard lock(s_layer_mutex);
+    for (uint32_t cbIdx = 0; cbIdx < pAllocateInfo->commandBufferCount;
+         cbIdx++) {
+      s_cmdbuf_device_map[pCommandBuffers[cbIdx]] = device;
+    }
+  }
+
+  return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL GwdFreeCommandBuffers(
+    VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount,
+    const VkCommandBuffer* pCommandBuffers) {
+  PFN_vkFreeCommandBuffers fp_FreeCommandBuffers = nullptr;
+  fp_FreeCommandBuffers = s_device_dt[device].FreeCommandBuffers;
+
+  fp_FreeCommandBuffers(device, commandPool, commandBufferCount,
+                        pCommandBuffers);
+
+  {
+    LocalGuard lock(s_layer_mutex);
+    for (uint32_t cbIdx = 0; cbIdx < commandBufferCount; cbIdx++) {
+      s_cmdbuf_device_map.erase(pCommandBuffers[cbIdx]);
+    }
+  }
+}
+
+VKAPI_ATTR void VKAPI_CALL GwdCmdDraw(VkCommandBuffer commandBuffer,
+                                      uint32_t vertexCount,
+                                      uint32_t instanceCount,
+                                      uint32_t firstVertex,
+                                      uint32_t firstInstance) {
+  const VkDevice device = s_cmdbuf_device_map[commandBuffer];
+
+  PFN_vkCmdDraw fp_CmdDraw = nullptr;
+  fp_CmdDraw = s_device_dt[device].CmdDraw;
+
+  fp_CmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex,
+             firstInstance);
+
+  WitchDoc_inst.PostCallCmdDraw(commandBuffer, vertexCount, instanceCount,
+                                firstVertex, firstInstance);
+}
+
+VKAPI_ATTR void VKAPI_CALL GwdCmdDrawIndexed(
+    VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount,
+    uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
+  const VkDevice device = s_cmdbuf_device_map[commandBuffer];
+
+  PFN_vkCmdDrawIndexed fp_CmdDrawIndexed = nullptr;
+  fp_CmdDrawIndexed = s_device_dt[device].CmdDrawIndexed;
+
+  fp_CmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex,
+                    vertexOffset, firstInstance);
+
+  WitchDoc_inst.PostCallCmdDrawIndexed(commandBuffer, indexCount, instanceCount,
+                                       firstIndex, vertexOffset, firstInstance);
+}
+
+VKAPI_ATTR void VKAPI_CALL GwdCmdDrawIndirect(VkCommandBuffer commandBuffer,
+                                              VkBuffer buffer,
+                                              VkDeviceSize offset,
+                                              uint32_t drawCount,
+                                              uint32_t stride) {
+  const VkDevice device = s_cmdbuf_device_map[commandBuffer];
+
+  PFN_vkCmdDrawIndirect fp_CmdDrawIndirect = nullptr;
+  fp_CmdDrawIndirect = s_device_dt[device].CmdDrawIndirect;
+
+  fp_CmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
+
+  WitchDoc_inst.PostCallCmdDrawIndirect(commandBuffer, buffer, offset,
+                                        drawCount, stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL GwdCmdDrawIndexedIndirect(
+    VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset,
+    uint32_t drawCount, uint32_t stride) {
+  const VkDevice device = s_cmdbuf_device_map[commandBuffer];
+
+  PFN_vkCmdDrawIndexedIndirect fp_CmdDrawIndexedIndirect = nullptr;
+  fp_CmdDrawIndexedIndirect = s_device_dt[device].CmdDrawIndexedIndirect;
+
+  fp_CmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
+
+  WitchDoc_inst.PostCallCmdDrawIndexedIndirect(commandBuffer, buffer, offset,
+                                               drawCount, stride);
+}
+
 // ----------------------------------------------------------------------------
 // Layer glue code
 // ----------------------------------------------------------------------------
@@ -374,6 +473,10 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdEnumerateDeviceExtensionProperties(
 // Layer bootstrapping code
 // ----------------------------------------------------------------------------
 
+#define GWD_GETINSTDISPATCHADDR(func) \
+  dispatch_table.##func =             \
+      (PFN_vk##func)next_gipa(*pInstance, "vk" #func);
+
 VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
     const VkInstanceCreateInfo* pCreateInfo,
     const VkAllocationCallbacks* pAllocator, VkInstance* pInstance) {
@@ -405,16 +508,10 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
   VkResult result = create_instance(pCreateInfo, pAllocator, pInstance);
 
   VkLayerInstanceDispatchTable dispatch_table = {};
-  dispatch_table.GetInstanceProcAddr =
-      (PFN_vkGetInstanceProcAddr)next_gipa(*pInstance, "vkGetInstanceProcAddr");
-  dispatch_table.DestroyInstance =
-      (PFN_vkDestroyInstance)next_gipa(*pInstance, "vkDestroyInstance");
-  dispatch_table.EnumerateDeviceExtensionProperties =
-      (PFN_vkEnumerateDeviceExtensionProperties)next_gipa(
-          *pInstance, "vkEnumerateDeviceExtensionProperties");
-  dispatch_table.EnumeratePhysicalDevices =
-      (PFN_vkEnumeratePhysicalDevices)next_gipa(*pInstance,
-                                                "vkEnumeratePhysicalDevices");
+  GWD_GETINSTDISPATCHADDR(GetInstanceProcAddr);
+  GWD_GETINSTDISPATCHADDR(DestroyInstance);
+  GWD_GETINSTDISPATCHADDR(EnumerateDeviceExtensionProperties);
+  GWD_GETINSTDISPATCHADDR(EnumeratePhysicalDevices);
 
   {
     LocalGuard lock(s_layer_mutex);
@@ -426,6 +523,8 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
   return result;
 }
 
+#undef GWD_GETINSTDISPATCHADDR
+
 VKAPI_ATTR void VKAPI_CALL GwdDestroyInstance(
     VkInstance instance, const VkAllocationCallbacks* pAllocator) {
   LocalGuard lock(s_layer_mutex);
@@ -433,6 +532,9 @@ VKAPI_ATTR void VKAPI_CALL GwdDestroyInstance(
 
   // TODO: Call down the chain??
 }
+
+#define GWD_GETDEVDISPATCHADDR(func) \
+  dispatch_table.##func = (PFN_vk##func)next_gdpa(*pDevice, "vk" #func);
 
 VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
     VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo,
@@ -460,9 +562,6 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
   // Advance linkage for next layer
   layer_ci->u.pLayerInfo = layer_ci->u.pLayerInfo->pNext;
 
-  // GPUVoyeur_inst.PreCallCreateDevice(physicalDevice, pCreateInfo, pAllocator,
-  // pDevice);
-
   // Need to call vkCreateDevice down the chain to actually create the device
   PFN_vkCreateDevice createFunc =
       (PFN_vkCreateDevice)next_gipa(VK_NULL_HANDLE, "vkCreateDevice");
@@ -478,26 +577,22 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
   // GwdGetDispatchedDeviceProcAddr.
 
   VkLayerDispatchTable dispatch_table = {};
-  dispatch_table.GetDeviceProcAddr =
-      (PFN_vkGetDeviceProcAddr)next_gdpa(*pDevice, "vkGetDeviceProcAddr");
-  dispatch_table.DestroyDevice =
-      (PFN_vkDestroyDevice)next_gdpa(*pDevice, "vkDestroyDevice");
-  dispatch_table.GetDeviceQueue =
-      (PFN_vkGetDeviceQueue)next_gdpa(*pDevice, "vkGetDeviceQueue");
-  dispatch_table.QueueSubmit =
-      (PFN_vkQueueSubmit)next_gdpa(*pDevice, "vkQueueSubmit");
-  dispatch_table.AllocateMemory =
-      (PFN_vkAllocateMemory)next_gdpa(*pDevice, "vkAllocateMemory");
-  dispatch_table.FreeMemory =
-      (PFN_vkFreeMemory)next_gdpa(*pDevice, "vkFreeMemory");
-  dispatch_table.BindBufferMemory =
-      (PFN_vkBindBufferMemory)next_gdpa(*pDevice, "vkBindBufferMemory");
-  dispatch_table.CreateBuffer =
-      (PFN_vkCreateBuffer)next_gdpa(*pDevice, "vkCreateBuffer");
-  dispatch_table.DestroyBuffer =
-      (PFN_vkDestroyBuffer)next_gdpa(*pDevice, "vkDestroyBuffer");
-  dispatch_table.BindBufferMemory2 =
-      (PFN_vkBindBufferMemory2)next_gdpa(*pDevice, "vkBindBufferMemory2");
+  GWD_GETDEVDISPATCHADDR(GetDeviceProcAddr);
+  GWD_GETDEVDISPATCHADDR(DestroyDevice);
+  GWD_GETDEVDISPATCHADDR(GetDeviceQueue);
+  GWD_GETDEVDISPATCHADDR(QueueSubmit);
+  GWD_GETDEVDISPATCHADDR(AllocateMemory);
+  GWD_GETDEVDISPATCHADDR(FreeMemory);
+  GWD_GETDEVDISPATCHADDR(BindBufferMemory);
+  GWD_GETDEVDISPATCHADDR(CreateBuffer);
+  GWD_GETDEVDISPATCHADDR(DestroyBuffer);
+  GWD_GETDEVDISPATCHADDR(BindBufferMemory2);
+  GWD_GETDEVDISPATCHADDR(CmdDraw);
+  GWD_GETDEVDISPATCHADDR(CmdDrawIndexed);
+  GWD_GETDEVDISPATCHADDR(CmdDrawIndirect);
+  GWD_GETDEVDISPATCHADDR(CmdDrawIndexedIndirect);
+  GWD_GETDEVDISPATCHADDR(AllocateCommandBuffers);
+  GWD_GETDEVDISPATCHADDR(FreeCommandBuffers);
 
   {
     LocalGuard lock(s_layer_mutex);
@@ -513,6 +608,8 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
 
   return result;
 }
+
+#undef GWD_GETDEVDISPATCHADDR
 
 VKAPI_ATTR void VKAPI_CALL
 GwdDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator) {
@@ -541,6 +638,12 @@ GwdGetDeviceProcAddr(VkDevice device, const char* pName) {
   GWD_GETPROCADDR(CreateBuffer);
   GWD_GETPROCADDR(DestroyBuffer);
   GWD_GETPROCADDR(BindBufferMemory2);
+  GWD_GETPROCADDR(CmdDraw);
+  GWD_GETPROCADDR(CmdDrawIndexed);
+  GWD_GETPROCADDR(CmdDrawIndirect);
+  GWD_GETPROCADDR(CmdDrawIndexedIndirect);
+  GWD_GETPROCADDR(AllocateCommandBuffers);
+  GWD_GETPROCADDR(FreeCommandBuffers);
 
   {
     LocalGuard lock(s_layer_mutex);
@@ -572,6 +675,12 @@ GwdGetInstanceProcAddr(VkInstance instance, const char* pName) {
   GWD_GETPROCADDR(CreateBuffer);
   GWD_GETPROCADDR(DestroyBuffer);
   GWD_GETPROCADDR(BindBufferMemory2);
+  GWD_GETPROCADDR(CmdDraw);
+  GWD_GETPROCADDR(CmdDrawIndexed);
+  GWD_GETPROCADDR(CmdDrawIndirect);
+  GWD_GETPROCADDR(CmdDrawIndexedIndirect);
+  GWD_GETPROCADDR(AllocateCommandBuffers);
+  GWD_GETPROCADDR(FreeCommandBuffers);
 
   {
     LocalGuard lock(s_layer_mutex);

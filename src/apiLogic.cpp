@@ -111,11 +111,30 @@ VkResult WitchDoctor::PostCallBindBufferMemory2(
     return inResult;
   }
 
+  // TODO: implement
+
   return VK_SUCCESS;
 }
 
+void WitchDoctor::PostCallCmdDraw(VkCommandBuffer commandBuffer,
+                                  uint32_t vertexCount, uint32_t instanceCount,
+                                  uint32_t firstVertex,
+                                  uint32_t firstInstance) {}
+
+void WitchDoctor::PostCallCmdDrawIndexed(
+    VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount,
+    uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {}
+void WitchDoctor::PostCallCmdDrawIndirect(VkCommandBuffer commandBuffer,
+                                          VkBuffer buffer, VkDeviceSize offset,
+                                          uint32_t drawCount, uint32_t stride) {
+}
+void WitchDoctor::PostCallCmdDrawIndexedIndirect(VkCommandBuffer commandBuffer,
+                                                 VkBuffer buffer,
+                                                 VkDeviceSize offset,
+                                                 uint32_t drawCount,
+                                                 uint32_t stride) {}
+
 // TODO: Match at BindVertexBuffer and BindIndexBuffer time
-// Defer to draw?
 // TODO: What about compute buffers?
 
 }  // namespace GWD
