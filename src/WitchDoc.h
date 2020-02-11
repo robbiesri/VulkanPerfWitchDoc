@@ -4,6 +4,8 @@
 
 #include <unordered_map>
 
+namespace GWD {
+
 struct LayerBypassDispatch {
   // instance functions, used for layer-managed query pool setup
   PFN_vkGetPhysicalDeviceProperties getPhysicalDeviceProperties;
@@ -29,6 +31,11 @@ class WitchDoctor {
   void PostCallFreeMemory(VkDevice device, VkDeviceMemory memory,
                           const VkAllocationCallbacks* pAllocator);
 
+  // TODO:
+  // BindBufferMemory
+  // BindBufferMemory2
+  // DestroyBuffer
+
  protected:
   PFN_vkVoidFunction GetDeviceProcAddr_DispatchHelper(const char* pName);
   PFN_vkVoidFunction GetInstanceProcAddr_DispatchHelper(const char* pName);
@@ -47,3 +54,5 @@ class WitchDoctor {
   // TODO: Replace with my own data structure in the FUTURE
   std::unordered_map<VkDeviceMemory, uint32_t> m_allocToMemTypeMap;
 };
+
+}  // namespace GWD

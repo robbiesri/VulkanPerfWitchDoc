@@ -5,6 +5,7 @@ set(target_name StadiaPerfLayer)
 add_library(${target_name} SHARED 
                                   ${CMAKE_CURRENT_SOURCE_DIR}/WitchDoc.h
                                   ${CMAKE_CURRENT_SOURCE_DIR}/WitchDoc.cpp
+                                  ${CMAKE_CURRENT_SOURCE_DIR}/apiLogic.cpp
                                   ${CMAKE_CURRENT_SOURCE_DIR}/layerCore.h
                                   ${CMAKE_CURRENT_SOURCE_DIR}/layerCore.cpp
                   )

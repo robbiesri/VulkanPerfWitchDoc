@@ -8,7 +8,7 @@
 #include "WitchDoc.h"
 #include "layerCore.h"
 
-namespace GWD {
+namespace GWDInterface {
 
 // layer metadata
 
@@ -60,7 +60,7 @@ static inline dispatch_key get_dispatch_key(const void* object) {
   return (dispatch_key) * (VkLayerDispatchTable**)object;
 }
 
-static WitchDoctor WitchDoc_inst;
+static GWD::WitchDoctor WitchDoc_inst;
 
 // Layer helper for external clients to dispatch
 PFN_vkVoidFunction GwdGetDispatchedDeviceProcAddr(VkDevice device,
@@ -530,12 +530,12 @@ GwdGetInstanceProcAddr(VkInstance instance, const char* pName) {
 #if defined(LOADER_PROC_HACK)
 WITCH_DOCTOR_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 vkGetDeviceProcAddr(VkDevice dev, const char* funcName) {
-  return GWD::GwdGetDeviceProcAddr(dev, funcName);
+  return GWDInterface::GwdGetDeviceProcAddr(dev, funcName);
 }
 
 WITCH_DOCTOR_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 vkGetInstanceProcAddr(VkInstance instance, const char* funcName) {
-  return GWD::GwdGetInstanceProcAddr(instance, funcName);
+  return GWDInterface::GwdGetInstanceProcAddr(instance, funcName);
 }
 #endif
 
@@ -566,4 +566,4 @@ gwdNegotiateLoaderLayerInterfaceVersion(
 
 #undef WITCH_DOCTOR_EXPORT
 
-}  // namespace GWD
+}  // namespace GWDInterface
