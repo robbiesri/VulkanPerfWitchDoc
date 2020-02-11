@@ -66,4 +66,30 @@ void WitchDoctor::PostCallFreeMemory(VkDevice device, VkDeviceMemory memory,
   }
 }
 
-} // namespace GWD
+VkResult WitchDoctor::PostCallBindBufferMemory(const VkResult inResult,
+                                               VkDevice device, VkBuffer buffer,
+                                               VkDeviceMemory memory,
+                                               VkDeviceSize memoryOffset) {
+  if (inResult != VK_SUCCESS) {
+    return inResult;
+  }
+
+  return VK_SUCCESS;
+}
+
+void WitchDoctor::PostCallDestroyBuffer(
+    VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) {
+
+}
+
+VkResult WitchDoctor::PostCallBindBufferMemory2(
+    const VkResult inResult, VkDevice device, uint32_t bindInfoCount,
+    const VkBindBufferMemoryInfo* pBindInfos) {
+  if (inResult != VK_SUCCESS) {
+    return inResult;
+  }
+
+  return VK_SUCCESS;
+}
+
+}  // namespace GWD

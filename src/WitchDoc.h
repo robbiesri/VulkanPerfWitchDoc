@@ -30,11 +30,14 @@ class WitchDoctor {
                                   VkDeviceMemory* pMemory);
   void PostCallFreeMemory(VkDevice device, VkDeviceMemory memory,
                           const VkAllocationCallbacks* pAllocator);
-
-  // TODO:
-  // BindBufferMemory
-  // BindBufferMemory2
-  // DestroyBuffer
+  VkResult PostCallBindBufferMemory(const VkResult inResult, VkDevice device,
+                                    VkBuffer buffer, VkDeviceMemory memory,
+                                    VkDeviceSize memoryOffset);
+  void PostCallDestroyBuffer(VkDevice device, VkBuffer buffer,
+                             const VkAllocationCallbacks* pAllocator);
+  VkResult PostCallBindBufferMemory2(const VkResult inResult, VkDevice device,
+                                     uint32_t bindInfoCount,
+                                     const VkBindBufferMemoryInfo* pBindInfos);
 
  protected:
   PFN_vkVoidFunction GetDeviceProcAddr_DispatchHelper(const char* pName);
