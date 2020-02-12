@@ -636,6 +636,7 @@ VKAPI_ATTR void VKAPI_CALL
 GwdDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator) {
   LocalGuard lock(s_layer_mutex);
   s_device_dt.erase(device);
+  s_numDevices--;
 }
 
 #define GWD_GETPROCADDR(func) \
