@@ -37,6 +37,43 @@ static std::unordered_map<VkInstance, VkLayerInstanceDispatchTable>
     s_instance_dt;
 static std::unordered_map<VkDevice, VkLayerDispatchTable> s_device_dt;
 
+struct instance_layer_data {
+  VkLayerInstanceDispatchTable dispatch_table;
+  VkInstance instance = VK_NULL_HANDLE;
+  //debug_report_data* report_data = nullptr;
+  //std::vector<VkDebugReportCallbackEXT> logging_callback;
+  //std::vector<VkDebugUtilsMessengerEXT> logging_messenger;
+  //InstanceExtensions extensions;
+};
+
+struct device_layer_data {
+  //debug_report_data* report_data = nullptr;
+  VkLayerDispatchTable dispatch_table;
+  //DeviceExtensions extensions = {};
+  VkDevice device = VK_NULL_HANDLE;
+  VkPhysicalDevice physical_device = VK_NULL_HANDLE;
+  instance_layer_data* instance_data = nullptr;
+};
+
+// Check out vulkan_validationlayers/layers/vk_layer_data.h for ideas on
+// converting to a small_unordered_map. Lookups would have much better
+// performance
+static std::unordered_map<void*, device_layer_data*> device_layer_data_map;
+static std::unordered_map<void*, instance_layer_data*> instance_layer_data_map;
+
+template <typename DATA_T>
+DATA_T* GetLayerDataPtr(void* data_key,
+                        std::unordered_map<void*, DATA_T*>& layer_data_map) {
+  /* TODO: We probably should lock here, or have caller lock */
+  DATA_T*& got = layer_data_map[data_key];
+
+  if (got == nullptr) {
+    got = new DATA_T;
+  }
+
+  return got;
+}
+
 // For finding a dispatch table in EnumeratePhysicalDeviceExtensionProperties
 static std::unordered_map<VkPhysicalDevice, VkInstance> s_device_instance_map;
 
@@ -282,6 +319,8 @@ VKAPI_ATTR void VKAPI_CALL GwdCmdDrawIndexed(
     VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount,
     uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
   const VkDevice device = s_cmdbuf_device_map[commandBuffer];
+
+  auto device_key = get_dispatch_key(commandBuffer);
 
   PFN_vkCmdDrawIndexed fp_CmdDrawIndexed = nullptr;
   fp_CmdDrawIndexed = s_device_dt[device].CmdDrawIndexed;
@@ -533,7 +572,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
       (PFN_vkCreateInstance)next_gipa(VK_NULL_HANDLE, "vkCreateInstance");
   VkResult result = create_instance(pCreateInfo, pAllocator, pInstance);
 
-  VkLayerInstanceDispatchTable dispatch_table = {};
+  instance_layer_data* instance_data = GetLayerDataPtr(
+      get_dispatch_key(*pInstance), instance_layer_data_map);
+  instance_data->instance = *pInstance;
+
+  //VkLayerInstanceDispatchTable dispatch_table = {};
+  VkLayerInstanceDispatchTable& dispatch_table = instance_data->dispatch_table;
   GWD_GETINSTDISPATCHADDR(GetInstanceProcAddr);
   GWD_GETINSTDISPATCHADDR(DestroyInstance);
   GWD_GETINSTDISPATCHADDR(EnumerateDeviceExtensionProperties);
