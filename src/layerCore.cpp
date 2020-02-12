@@ -52,16 +52,16 @@ static const uint32_t s_numDeviceExtensions = 0;
 
 // Dispatch tables required for routing instance and device calls onto the next
 // layer in the dispatch chain among our handling of functions we intercept.
-static std::unordered_map<VkInstance, VkLayerInstanceDispatchTable>
+static ska::flat_hash_map<VkInstance, VkLayerInstanceDispatchTable>
     s_instance_dt;
-static std::unordered_map<VkDevice, VkLayerDispatchTable> s_device_dt;
+static ska::flat_hash_map<VkDevice, VkLayerDispatchTable> s_device_dt;
 
 // For finding a dispatch table in EnumeratePhysicalDeviceExtensionProperties
-static std::unordered_map<VkPhysicalDevice, VkInstance> s_device_instance_map;
+static ska::flat_hash_map<VkPhysicalDevice, VkInstance> s_device_instance_map;
 
 // helper maps to find parent device until we try dispatch_keys
-static std::unordered_map<VkCommandBuffer, VkDevice> s_cmdbuf_device_map;
-static std::unordered_map<VkQueue, VkDevice> s_queue_device_map;
+static ska::flat_hash_map<VkCommandBuffer, VkDevice> s_cmdbuf_device_map;
+static ska::flat_hash_map<VkQueue, VkDevice> s_queue_device_map;
 
 // Must protect access to state (maps above) by mutex since the Vulkan
 // application may be calling these functions from different threads.
