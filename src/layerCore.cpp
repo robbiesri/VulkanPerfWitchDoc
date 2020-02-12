@@ -43,11 +43,7 @@ static constexpr const uint32_t kLayerImplVersion = 1;
 static constexpr const uint32_t kLayerSpecVersion = VK_API_VERSION_1_1;
 
 // TODO: Add support for VK_EXT_debug_utils (BLEH)
-// static const VkExtensionProperties s_deviceExtensions[1] = { {
-// VK_EXT_DEBUG_MARKER_EXTENSION_NAME, VK_EXT_DEBUG_MARKER_SPEC_VERSION } };
-// static const uint32_t s_numDeviceExtensions =
-// uint32_t(sizeof(s_deviceExtensions) / sizeof(VkExtensionProperties));
-static const VkExtensionProperties s_deviceExtensions[1] = {};
+//static const VkExtensionProperties s_deviceExtensions[] = {};
 static const uint32_t s_numDeviceExtensions = 0;
 
 // Dispatch tables required for routing instance and device calls onto the next
@@ -419,8 +415,8 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdEnumerateDeviceExtensionProperties(
       }
 
       if (numExtensionsToCopy > 0) {
-        memcpy(pProperties, s_deviceExtensions,
-               numExtensionsToCopy * sizeof(VkExtensionProperties));
+        //memcpy(pProperties, s_deviceExtensions,
+        //       numExtensionsToCopy * sizeof(VkExtensionProperties));
       }
       *pPropertyCount = numExtensionsToCopy;
 
@@ -466,21 +462,21 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdEnumerateDeviceExtensionProperties(
 
   // let's scan the list of extensions from down the chain, and add our unique
   // extensions
-  for (uint32_t extIdx = 0; extIdx < s_numDeviceExtensions; extIdx++) {
-    auto curDeviceExt = s_deviceExtensions[extIdx];
-    bool uniqueExtension = true;
+  //for (uint32_t extIdx = 0; extIdx < s_numDeviceExtensions; extIdx++) {
+  //  auto curDeviceExt = s_deviceExtensions[extIdx];
+  //  bool uniqueExtension = true;
 
-    for (auto extProps : extensions) {
-      if (0 == strcmp(extProps.extensionName, curDeviceExt.extensionName)) {
-        uniqueExtension = false;
-        break;
-      }
-    }
+  //  for (auto extProps : extensions) {
+  //    if (0 == strcmp(extProps.extensionName, curDeviceExt.extensionName)) {
+  //      uniqueExtension = false;
+  //      break;
+  //    }
+  //  }
 
-    if (uniqueExtension) {
-      extensions.push_back(curDeviceExt);
-    }
-  }
+  //  if (uniqueExtension) {
+  //    extensions.push_back(curDeviceExt);
+  //  }
+  //}
 
   if (nullptr == pProperties) {
     // just a count
