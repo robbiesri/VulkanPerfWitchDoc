@@ -1,8 +1,10 @@
 #pragma once
 
+#define NOMINMAX
+
 #include <vulkan/vulkan.h>
 
-#include <unordered_map>
+#include "flat_hash_map.hpp"
 #include <vector>
 
 namespace GWD {
@@ -82,8 +84,8 @@ class WitchDoctor {
   std::vector<bool> m_memTypeIsDeviceLocal;
 
   // TODO: Replace with my own data structure in the FUTURE
-  std::unordered_map<VkDeviceMemory, uint32_t> m_allocToMemTypeMap;
-  std::unordered_map<VkBuffer, uint32_t> m_bufferToMemTypeMap;
+  ska::flat_hash_map<VkDeviceMemory, uint32_t> m_allocToMemTypeMap;
+  ska::flat_hash_map<VkBuffer, uint32_t> m_bufferToMemTypeMap;
 
   bool m_index_buffer_is_device_local = false;
   bool m_vertex_buffers_are_device_local = false;

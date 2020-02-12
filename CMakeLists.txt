@@ -33,4 +33,6 @@ endif()
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+set(FLAT_HASH_MAP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/flat_hash_map)
+
 add_subdirectory(src)

@@ -8,11 +8,13 @@ add_library(${target_name} SHARED
                                   ${CMAKE_CURRENT_SOURCE_DIR}/apiLogic.cpp
                                   ${CMAKE_CURRENT_SOURCE_DIR}/layerCore.h
                                   ${CMAKE_CURRENT_SOURCE_DIR}/layerCore.cpp
+                                  ${FLAT_HASH_MAP_DIR}/flat_hash_map.hpp
                   )
                   
 # visual studio stuff                  
 
 target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                                                  ${FLAT_HASH_MAP_DIR}
                                                   ${VULKAN_DIR}/include
                                                   ${VULKAN_DIR}/LayerFactory/Project)
 
