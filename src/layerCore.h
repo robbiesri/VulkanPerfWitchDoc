@@ -2,7 +2,7 @@
 
 #include <vulkan/vk_layer.h>
 
-namespace GWD {
+namespace GWDInterface {
 
 // Helper functions to grab the next proc address in the dispatch chain
 PFN_vkVoidFunction GwdGetDispatchedDeviceProcAddr(VkDevice device,
@@ -10,4 +10,4 @@ PFN_vkVoidFunction GwdGetDispatchedDeviceProcAddr(VkDevice device,
 PFN_vkVoidFunction GwdGetDispatchedInstanceProcAddr(VkInstance instance,
                                                     const char* pName);
 
-}  // namespace GWD
+}  // namespace GWDInterface
