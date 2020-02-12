@@ -32,51 +32,11 @@ static constexpr const uint32_t kLayerSpecVersion = VK_API_VERSION_1_1;
 static const VkExtensionProperties s_deviceExtensions[1] = {};
 static const uint32_t s_numDeviceExtensions = 0;
 
-//static VkLayerInstanceDispatchTable s_instance_dt;
-//static VkLayerDispatchTable s_device_dt;
-
 // Dispatch tables required for routing instance and device calls onto the next
 // layer in the dispatch chain among our handling of functions we intercept.
 static std::unordered_map<VkInstance, VkLayerInstanceDispatchTable>
     s_instance_dt;
 static std::unordered_map<VkDevice, VkLayerDispatchTable> s_device_dt;
-
-//struct instance_layer_data {
-//  VkLayerInstanceDispatchTable dispatch_table;
-//  VkInstance instance = VK_NULL_HANDLE;
-//  //debug_report_data* report_data = nullptr;
-//  //std::vector<VkDebugReportCallbackEXT> logging_callback;
-//  //std::vector<VkDebugUtilsMessengerEXT> logging_messenger;
-//  //InstanceExtensions extensions;
-//};
-//
-//struct device_layer_data {
-//  //debug_report_data* report_data = nullptr;
-//  VkLayerDispatchTable dispatch_table;
-//  //DeviceExtensions extensions = {};
-//  VkDevice device = VK_NULL_HANDLE;
-//  VkPhysicalDevice physical_device = VK_NULL_HANDLE;
-//  instance_layer_data* instance_data = nullptr;
-//};
-//
-//// Check out vulkan_validationlayers/layers/vk_layer_data.h for ideas on
-//// converting to a small_unordered_map. Lookups would have much better
-//// performance
-//static std::unordered_map<void*, device_layer_data*> device_layer_data_map;
-//static std::unordered_map<void*, instance_layer_data*> instance_layer_data_map;
-//
-//template <typename DATA_T>
-//DATA_T* GetLayerDataPtr(void* data_key,
-//                        std::unordered_map<void*, DATA_T*>& layer_data_map) {
-//  /* TODO: We probably should lock here, or have caller lock */
-//  DATA_T*& got = layer_data_map[data_key];
-//
-//  if (got == nullptr) {
-//    got = new DATA_T;
-//  }
-//
-//  return got;
-//}
 
 // For finding a dispatch table in EnumeratePhysicalDeviceExtensionProperties
 static std::unordered_map<VkPhysicalDevice, VkInstance> s_device_instance_map;
@@ -108,15 +68,12 @@ PFN_vkVoidFunction GwdGetDispatchedDeviceProcAddr(VkDevice device,
                                                   const char* pName) {
   LocalGuard lock(s_layer_mutex);
   return s_device_dt[device].GetDeviceProcAddr(device, pName);
-  //return s_device_dt.GetDeviceProcAddr(device, pName);
-  //return s_global_dispatch_table->GetDeviceProcAddr(device, pName);
 }
 
 PFN_vkVoidFunction GwdGetDispatchedInstanceProcAddr(VkInstance instance,
                                                     const char* pName) {
   LocalGuard lock(s_layer_mutex);
   return s_instance_dt[instance].GetInstanceProcAddr(instance, pName);
-  //return s_instance_dt.GetInstanceProcAddr(instance, pName);
 }
 
 // ----------------------------------------------------------------------------
@@ -132,8 +89,6 @@ VKAPI_ATTR void VKAPI_CALL GwdGetDeviceQueue(VkDevice device,
                                              uint32_t queueIndex,
                                              VkQueue* pQueue) {
   PFN_vkGetDeviceQueue fp_GetDeviceQueue = nullptr;
-  //fp_GetDeviceQueue = s_device_dt[device].GetDeviceQueue;
-  //fp_GetDeviceQueue = s_device_dt.GetDeviceQueue;
   fp_GetDeviceQueue = s_global_dispatch_table->GetDeviceQueue;
 
   fp_GetDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue);
@@ -151,8 +106,6 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdQueueSubmit(VkQueue queue,
   VkDevice device = s_queue_device_map[queue];
 
   PFN_vkQueueSubmit fp_QueueSubmit = nullptr;
-  //fp_QueueSubmit = s_device_dt[device].QueueSubmit;
-  //fp_QueueSubmit = s_device_dt.QueueSubmit;
   fp_QueueSubmit = s_global_dispatch_table->QueueSubmit;
 
   VkResult result = fp_QueueSubmit(queue, submitCount, pSubmits, fence);
@@ -167,8 +120,6 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdAllocateMemory(
     VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo,
     const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory) {
   PFN_vkAllocateMemory fp_AllocateMemory = nullptr;
-  //fp_AllocateMemory = s_device_dt[device].AllocateMemory;
-  //fp_AllocateMemory = s_device_dt.AllocateMemory;
   fp_AllocateMemory = s_global_dispatch_table->AllocateMemory;
 
   VkResult result =
@@ -184,8 +135,6 @@ VKAPI_ATTR void VKAPI_CALL
 GwdFreeMemory(VkDevice device, VkDeviceMemory memory,
               const VkAllocationCallbacks* pAllocator) {
   PFN_vkFreeMemory fp_FreeMemory = nullptr;
-  //fp_FreeMemory = s_device_dt[device].FreeMemory;
-  //fp_FreeMemory = s_device_dt.FreeMemory;
   fp_FreeMemory = s_global_dispatch_table->FreeMemory;
 
   fp_FreeMemory(device, memory, pAllocator);
@@ -198,8 +147,6 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdBindBufferMemory(VkDevice device,
                                                    VkDeviceMemory memory,
                                                    VkDeviceSize memoryOffset) {
   PFN_vkBindBufferMemory fp_BindBufferMemory = nullptr;
-  //fp_BindBufferMemory = s_device_dt[device].BindBufferMemory;
-  //fp_BindBufferMemory = s_device_dt.BindBufferMemory;
   fp_BindBufferMemory = s_global_dispatch_table->BindBufferMemory;
 
   VkResult result = fp_BindBufferMemory(device, buffer, memory, memoryOffset);
@@ -214,7 +161,6 @@ VKAPI_ATTR VkResult VKAPI_CALL
 GwdCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo,
                 const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) {
   PFN_vkCreateBuffer fp_CreateBuffer = nullptr;
-  //fp_CreateBuffer = s_device_dt[device].CreateBuffer;
   fp_CreateBuffer = s_global_dispatch_table->CreateBuffer;
 
   VkResult result = fp_CreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
@@ -228,7 +174,6 @@ GwdCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo,
 VKAPI_ATTR void VKAPI_CALL GwdDestroyBuffer(
     VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) {
   PFN_vkDestroyBuffer fp_DestroyBuffer = nullptr;
-  //fp_DestroyBuffer = s_device_dt[device].DestroyBuffer;
   fp_DestroyBuffer = s_global_dispatch_table->DestroyBuffer;
 
   fp_DestroyBuffer(device, buffer, pAllocator);
@@ -240,7 +185,6 @@ VKAPI_ATTR VkResult VKAPI_CALL
 GwdBindBufferMemory2(VkDevice device, uint32_t bindInfoCount,
                      const VkBindBufferMemoryInfo* pBindInfos) {
   PFN_vkBindBufferMemory2 fp_BindBufferMemory2 = nullptr;
-  //fp_BindBufferMemory2 = s_device_dt[device].BindBufferMemory2;
   fp_BindBufferMemory2 = s_global_dispatch_table->BindBufferMemory2;
 
   VkResult result = fp_BindBufferMemory2(device, bindInfoCount, pBindInfos);
@@ -255,19 +199,18 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdAllocateCommandBuffers(
     VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo,
     VkCommandBuffer* pCommandBuffers) {
   PFN_vkAllocateCommandBuffers fp_AllocateCommandBuffers = nullptr;
-  //fp_AllocateCommandBuffers = s_device_dt[device].AllocateCommandBuffers;
   fp_AllocateCommandBuffers = s_global_dispatch_table->AllocateCommandBuffers;
 
   VkResult result =
       fp_AllocateCommandBuffers(device, pAllocateInfo, pCommandBuffers);
 
-  //if (VK_SUCCESS == result) {
-  //  LocalGuard lock(s_layer_mutex);
-  //  for (uint32_t cbIdx = 0; cbIdx < pAllocateInfo->commandBufferCount;
-  //       cbIdx++) {
-  //    s_cmdbuf_device_map[pCommandBuffers[cbIdx]] = device;
-  //  }
-  //}
+  if (VK_SUCCESS == result) {
+    LocalGuard lock(s_layer_mutex);
+    for (uint32_t cbIdx = 0; cbIdx < pAllocateInfo->commandBufferCount;
+         cbIdx++) {
+      s_cmdbuf_device_map[pCommandBuffers[cbIdx]] = device;
+    }
+  }
 
   return result;
 }
@@ -276,7 +219,6 @@ VKAPI_ATTR void VKAPI_CALL GwdFreeCommandBuffers(
     VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount,
     const VkCommandBuffer* pCommandBuffers) {
   PFN_vkFreeCommandBuffers fp_FreeCommandBuffers = nullptr;
-  //fp_FreeCommandBuffers = s_device_dt[device].FreeCommandBuffers;
   fp_FreeCommandBuffers = s_global_dispatch_table->FreeCommandBuffers;
 
   fp_FreeCommandBuffers(device, commandPool, commandBufferCount,
@@ -294,10 +236,9 @@ VKAPI_ATTR void VKAPI_CALL GwdCmdBindIndexBuffer(VkCommandBuffer commandBuffer,
                                                  VkBuffer buffer,
                                                  VkDeviceSize offset,
                                                  VkIndexType indexType) {
-  //const VkDevice device = s_cmdbuf_device_map[commandBuffer];
+  // const VkDevice device = s_cmdbuf_device_map[commandBuffer];
 
   PFN_vkCmdBindIndexBuffer fp_CmdBindIndexBuffer = nullptr;
-  //fp_CmdBindIndexBuffer = s_device_dt[device].CmdBindIndexBuffer;
   fp_CmdBindIndexBuffer = s_global_dispatch_table->CmdBindIndexBuffer;
 
   fp_CmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
@@ -306,13 +247,10 @@ VKAPI_ATTR void VKAPI_CALL GwdCmdBindIndexBuffer(VkCommandBuffer commandBuffer,
                                            indexType);
 }
 
-VKAPI_ATTR void VKAPI_CALL
-GwdCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount,
+VKAPI_ATTR void VKAPI_CALL GwdCmdBindVertexBuffers(
+    VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount,
     const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) {
-  //const VkDevice device = s_cmdbuf_device_map[commandBuffer];
-
   PFN_vkCmdBindVertexBuffers fp_CmdBindVertexBuffers = nullptr;
-  //fp_CmdBindVertexBuffers = s_device_dt[device].CmdBindVertexBuffers;
   fp_CmdBindVertexBuffers = s_global_dispatch_table->CmdBindVertexBuffers;
 
   fp_CmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers,
@@ -327,10 +265,7 @@ VKAPI_ATTR void VKAPI_CALL GwdCmdDraw(VkCommandBuffer commandBuffer,
                                       uint32_t instanceCount,
                                       uint32_t firstVertex,
                                       uint32_t firstInstance) {
-  //const VkDevice device = s_cmdbuf_device_map[commandBuffer];
-
   PFN_vkCmdDraw fp_CmdDraw = nullptr;
-  //fp_CmdDraw = s_device_dt[device].CmdDraw;
   fp_CmdDraw = s_global_dispatch_table->CmdDraw;
 
   fp_CmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex,
@@ -343,12 +278,7 @@ VKAPI_ATTR void VKAPI_CALL GwdCmdDraw(VkCommandBuffer commandBuffer,
 VKAPI_ATTR void VKAPI_CALL GwdCmdDrawIndexed(
     VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount,
     uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
-  //const VkDevice device = s_cmdbuf_device_map[commandBuffer];
-
-  auto device_key = get_dispatch_key(commandBuffer);
-
   PFN_vkCmdDrawIndexed fp_CmdDrawIndexed = nullptr;
-  //fp_CmdDrawIndexed = s_device_dt[device].CmdDrawIndexed;
   fp_CmdDrawIndexed = s_global_dispatch_table->CmdDrawIndexed;
 
   fp_CmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex,
@@ -363,10 +293,7 @@ VKAPI_ATTR void VKAPI_CALL GwdCmdDrawIndirect(VkCommandBuffer commandBuffer,
                                               VkDeviceSize offset,
                                               uint32_t drawCount,
                                               uint32_t stride) {
-  //const VkDevice device = s_cmdbuf_device_map[commandBuffer];
-
   PFN_vkCmdDrawIndirect fp_CmdDrawIndirect = nullptr;
-  //fp_CmdDrawIndirect = s_device_dt[device].CmdDrawIndirect;
   fp_CmdDrawIndirect = s_global_dispatch_table->CmdDrawIndirect;
 
   fp_CmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
@@ -378,10 +305,7 @@ VKAPI_ATTR void VKAPI_CALL GwdCmdDrawIndirect(VkCommandBuffer commandBuffer,
 VKAPI_ATTR void VKAPI_CALL GwdCmdDrawIndexedIndirect(
     VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset,
     uint32_t drawCount, uint32_t stride) {
-  //const VkDevice device = s_cmdbuf_device_map[commandBuffer];
-
   PFN_vkCmdDrawIndexedIndirect fp_CmdDrawIndexedIndirect = nullptr;
-  //fp_CmdDrawIndexedIndirect = s_device_dt[device].CmdDrawIndexedIndirect;
   fp_CmdDrawIndexedIndirect = s_global_dispatch_table->CmdDrawIndexedIndirect;
 
   fp_CmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
@@ -429,8 +353,7 @@ GwdEnumeratePhysicalDevices(VkInstance instance, uint32_t* pPhysicalDeviceCount,
   {
     LocalGuard lock(s_layer_mutex);
     fp_EnumeratePhysicalDevices =
-        //s_instance_dt.EnumeratePhysicalDevices;
-    s_instance_dt[instance].EnumeratePhysicalDevices;
+        s_instance_dt[instance].EnumeratePhysicalDevices;
   }
   VkResult result = fp_EnumeratePhysicalDevices(instance, pPhysicalDeviceCount,
                                                 pPhysicalDevices);
@@ -500,8 +423,7 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdEnumerateDeviceExtensionProperties(
     LocalGuard lock(s_layer_mutex);
     VkInstance instance = s_device_instance_map[physicalDevice];
     fp_EnumerateDeviceExtensionProperties =
-        //s_instance_dt.EnumerateDeviceExtensionProperties;
-    s_instance_dt[instance].EnumerateDeviceExtensionProperties;
+        s_instance_dt[instance].EnumerateDeviceExtensionProperties;
   }
 
   if (pLayerName != nullptr) {
@@ -602,12 +524,7 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
       (PFN_vkCreateInstance)next_gipa(VK_NULL_HANDLE, "vkCreateInstance");
   VkResult result = create_instance(pCreateInfo, pAllocator, pInstance);
 
-  //instance_layer_data* instance_data = GetLayerDataPtr(
-  //    get_dispatch_key(*pInstance), instance_layer_data_map);
-  //instance_data->instance = *pInstance;
-
   VkLayerInstanceDispatchTable dispatch_table = {};
-  //VkLayerInstanceDispatchTable& dispatch_table = instance_data->dispatch_table;
   GWD_GETINSTDISPATCHADDR(GetInstanceProcAddr);
   GWD_GETINSTDISPATCHADDR(DestroyInstance);
   GWD_GETINSTDISPATCHADDR(EnumerateDeviceExtensionProperties);
@@ -616,7 +533,6 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
   {
     LocalGuard lock(s_layer_mutex);
     s_instance_dt[*pInstance] = dispatch_table;
-    //s_instance_dt = dispatch_table;
   }
 
   WitchDoc_inst.PostCallCreateInstance(pCreateInfo, pAllocator, pInstance);
@@ -700,7 +616,6 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
   {
     LocalGuard lock(s_layer_mutex);
     s_device_dt[*pDevice] = dispatch_table;
-    //s_device_dt = dispatch_table;
     s_numDevices++;
     if (1 == s_numDevices) {
       s_global_dispatch_table = &s_device_dt[*pDevice];
@@ -720,7 +635,7 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDevice(
 VKAPI_ATTR void VKAPI_CALL
 GwdDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator) {
   LocalGuard lock(s_layer_mutex);
-  //s_device_dt.erase(device);
+  s_device_dt.erase(device);
 }
 
 #define GWD_GETPROCADDR(func) \
@@ -756,7 +671,6 @@ GwdGetDeviceProcAddr(VkDevice device, const char* pName) {
   {
     LocalGuard lock(s_layer_mutex);
     return s_device_dt[device].GetDeviceProcAddr(device, pName);
-    //return s_device_dt.GetDeviceProcAddr(device, pName);
   }
 }
 
@@ -796,7 +710,6 @@ GwdGetInstanceProcAddr(VkInstance instance, const char* pName) {
   {
     LocalGuard lock(s_layer_mutex);
     return s_instance_dt[instance].GetInstanceProcAddr(instance, pName);
-    //return s_instance_dt.GetInstanceProcAddr(instance, pName);
   }
 }
 
