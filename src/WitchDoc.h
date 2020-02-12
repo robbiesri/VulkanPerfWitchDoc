@@ -21,6 +21,7 @@
 #include <vulkan/vulkan.h>
 
 #include "flat_hash_map.hpp"
+#include <mutex>
 #include <vector>
 
 namespace GWD {
@@ -39,6 +40,14 @@ class WitchDoctor {
   VkResult PostCallCreateInstance(const VkInstanceCreateInfo* pCreateInfo,
                                   const VkAllocationCallbacks* pAllocator,
                                   VkInstance* pInstance);
+  VkResult PostCallCreateDebugUtilsMessengerEXT(
+      const VkResult inResult, VkInstance instance,
+      VkDebugUtilsMessengerCreateInfoEXT const* pCreateInfo,
+      const VkAllocationCallbacks* pAllocator,
+      VkDebugUtilsMessengerEXT* pMessenger);
+  void PostCallDestroyDebugUtilsMessengerEXT(
+      VkInstance instance, VkDebugUtilsMessengerEXT messenger,
+      const VkAllocationCallbacks* pAllocator);
   VkResult PostCallCreateDevice(VkPhysicalDevice physicalDevice,
                                 const VkDeviceCreateInfo* pCreateInfo,
                                 const VkAllocationCallbacks* pAllocator,
@@ -95,6 +104,11 @@ class WitchDoctor {
 
   VkInstance m_instance = VK_NULL_HANDLE;
   VkDevice m_device = VK_NULL_HANDLE;
+
+  std::mutex m_debug_utils_messenger_mutex;
+  ska::flat_hash_map<VkDebugUtilsMessengerEXT,
+                            VkDebugUtilsMessengerCreateInfoEXT>
+      m_debug_utils_messengers;
 
   VkPhysicalDeviceMemoryProperties m_physDevMemProps = {};
   std::vector<bool> m_memTypeIsDeviceLocal;
