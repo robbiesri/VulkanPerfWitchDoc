@@ -22,6 +22,8 @@
 
 namespace GWD {
 
+#define LOG_MESSAGE MessageLogger(this).stream()
+
 PFN_vkVoidFunction WitchDoctor::GetDeviceProcAddr_DispatchHelper(
     const char* pName) {
   return GWDInterface::GwdGetDispatchedDeviceProcAddr(m_device, pName);
@@ -188,10 +190,13 @@ void WitchDoctor::PostCallCmdDrawIndexed(
     //std::cout
     //    << "vkCmdDrawIndexed is using index buffer that is not DEVICE_LOCAL"
     //    << std::endl;
-    std::ostringstream warn_log;
-    warn_log
+    //std::ostringstream warn_log;
+    //warn_log
+    //    << "vkCmdDrawIndexed is using index buffer that is not DEVICE_LOCAL";
+    //PerformanceWarningMessage(warn_log.str());
+
+    LOG_MESSAGE
         << "vkCmdDrawIndexed is using index buffer that is not DEVICE_LOCAL";
-    PerformanceWarningMessage(warn_log.str());
   }
 
   if (!m_vertex_buffers_are_device_local) {
