@@ -18,6 +18,7 @@
 #include "layerCore.h"
 
 #include <iostream>
+#include <sstream>
 
 namespace GWD {
 
@@ -171,8 +172,12 @@ void WitchDoctor::PostCallCmdDraw(VkCommandBuffer commandBuffer,
                                   uint32_t firstVertex,
                                   uint32_t firstInstance) {
   if (!m_vertex_buffers_are_device_local) {
-    std::cout << "vkCmdDraw is using vertex buffers that are not DEVICE_LOCAL"
-              << std::endl;
+    //std::cout << "vkCmdDraw is using vertex buffers that are not DEVICE_LOCAL"
+    //          << std::endl;
+
+    std::ostringstream warn_log;
+    warn_log << "vkCmdDraw is using vertex buffers that are not DEVICE_LOCAL";
+    PerformanceWarningMessage(warn_log.str());
   }
 }
 
@@ -180,9 +185,13 @@ void WitchDoctor::PostCallCmdDrawIndexed(
     VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount,
     uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
   if (!m_index_buffer_is_device_local) {
-    std::cout
-        << "vkCmdDrawIndexed is using index buffer that is not DEVICE_LOCAL"
-        << std::endl;
+    //std::cout
+    //    << "vkCmdDrawIndexed is using index buffer that is not DEVICE_LOCAL"
+    //    << std::endl;
+    std::ostringstream warn_log;
+    warn_log
+        << "vkCmdDrawIndexed is using index buffer that is not DEVICE_LOCAL";
+    PerformanceWarningMessage(warn_log.str());
   }
 
   if (!m_vertex_buffers_are_device_local) {

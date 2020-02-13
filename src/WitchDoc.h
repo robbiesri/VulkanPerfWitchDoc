@@ -99,6 +99,8 @@ class WitchDoctor {
   void PopulateInstanceLayerBypassDispatchTable();
   void PopulateDeviceLayerBypassDispatchTable();
 
+  void PerformanceWarningMessage(std::string& message);
+
  private:
   LayerBypassDispatch m_layerBypassDispatch = {};
 

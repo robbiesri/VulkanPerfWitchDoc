@@ -16,10 +16,32 @@
 
 #include "WitchDoc.h"
 
+#include <iostream>
+
 namespace GWD {
 
 WitchDoctor::WitchDoctor() {}
 
 WitchDoctor::~WitchDoctor() {}
 
-} // namespace GWD
+void WitchDoctor::PerformanceWarningMessage(std::string& message) {
+  if (m_debug_utils_messengers.size() > 0) {
+    std::lock_guard<std::mutex> lock(m_debug_utils_messenger_mutex);
+    VkDebugUtilsMessengerCallbackDataEXT callback_data = {};
+    callback_data.sType =
+        VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CALLBACK_DATA_EXT;
+    callback_data.pMessage =
+        message.c_str();
+
+    for (const auto& messenger : m_debug_utils_messengers) {
+      messenger.second.pfnUserCallback(
+          VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT,
+          VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT, &callback_data, messenger.second.pUserData);
+    }
+  } else {
+      // TODO: Support visual studio outputdebug
+    std::cout << message.c_str() << std::endl;
+  }
+}
+
+}  // namespace GWD
