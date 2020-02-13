@@ -42,26 +42,21 @@ static constexpr const char* const kLayerDescription =
 static constexpr const uint32_t kLayerImplVersion = 1;
 static constexpr const uint32_t kLayerSpecVersion = VK_API_VERSION_1_1;
 
-// TODO: Add support for VK_EXT_debug_utils (BLEH)
-// static const VkExtensionProperties s_deviceExtensions[1] = { {
-// VK_EXT_DEBUG_MARKER_EXTENSION_NAME, VK_EXT_DEBUG_MARKER_SPEC_VERSION } };
-// static const uint32_t s_numDeviceExtensions =
-// uint32_t(sizeof(s_deviceExtensions) / sizeof(VkExtensionProperties));
-static const VkExtensionProperties s_deviceExtensions[1] = {};
+// static const VkExtensionProperties s_deviceExtensions[] = {};
 static const uint32_t s_numDeviceExtensions = 0;
 
 // Dispatch tables required for routing instance and device calls onto the next
 // layer in the dispatch chain among our handling of functions we intercept.
-static std::unordered_map<VkInstance, VkLayerInstanceDispatchTable>
+static ska::flat_hash_map<VkInstance, VkLayerInstanceDispatchTable>
     s_instance_dt;
-static std::unordered_map<VkDevice, VkLayerDispatchTable> s_device_dt;
+static ska::flat_hash_map<VkDevice, VkLayerDispatchTable> s_device_dt;
 
 // For finding a dispatch table in EnumeratePhysicalDeviceExtensionProperties
-static std::unordered_map<VkPhysicalDevice, VkInstance> s_device_instance_map;
+static ska::flat_hash_map<VkPhysicalDevice, VkInstance> s_device_instance_map;
 
 // helper maps to find parent device until we try dispatch_keys
-static std::unordered_map<VkCommandBuffer, VkDevice> s_cmdbuf_device_map;
-static std::unordered_map<VkQueue, VkDevice> s_queue_device_map;
+static ska::flat_hash_map<VkCommandBuffer, VkDevice> s_cmdbuf_device_map;
+static ska::flat_hash_map<VkQueue, VkDevice> s_queue_device_map;
 
 // Must protect access to state (maps above) by mutex since the Vulkan
 // application may be calling these functions from different threads.
@@ -101,6 +96,36 @@ PFN_vkVoidFunction GwdGetDispatchedInstanceProcAddr(VkInstance instance,
 // TODO: For VkCommandBuffer and VkQueue, we store a map between VkCommandBuffer
 // and VkQueue to VkDevice. We might want to see if we can use the same
 // mechanism as the dispatch_key from layer_factory
+
+VKAPI_ATTR VkResult VKAPI_CALL GwdCreateDebugUtilsMessengerEXT(
+    VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT const* pCreateInfo,
+    VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) {
+  PFN_vkCreateDebugUtilsMessengerEXT fp_CreateDebugUtilsMessengerEXT = nullptr;
+  fp_CreateDebugUtilsMessengerEXT =
+      s_instance_dt[instance].CreateDebugUtilsMessengerEXT;
+
+  VkResult result = fp_CreateDebugUtilsMessengerEXT(instance, pCreateInfo,
+                                                    pAllocator, pMessenger);
+
+  result = WitchDoc_inst.PostCallCreateDebugUtilsMessengerEXT(
+      result, instance, pCreateInfo, pAllocator, pMessenger);
+
+  return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL GwdDestroyDebugUtilsMessengerEXT(
+    VkInstance instance, VkDebugUtilsMessengerEXT messenger,
+    VkAllocationCallbacks* pAllocator) {
+  PFN_vkDestroyDebugUtilsMessengerEXT fp_DestroyDebugUtilsMessengerEXT =
+      nullptr;
+  fp_DestroyDebugUtilsMessengerEXT =
+      s_instance_dt[instance].DestroyDebugUtilsMessengerEXT;
+
+  fp_DestroyDebugUtilsMessengerEXT(instance, messenger, pAllocator);
+
+  WitchDoc_inst.PostCallDestroyDebugUtilsMessengerEXT(instance, messenger,
+                                                      pAllocator);
+}
 
 VKAPI_ATTR void VKAPI_CALL GwdGetDeviceQueue(VkDevice device,
                                              uint32_t queueFamilyIndex,
@@ -419,8 +444,8 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdEnumerateDeviceExtensionProperties(
       }
 
       if (numExtensionsToCopy > 0) {
-        memcpy(pProperties, s_deviceExtensions,
-               numExtensionsToCopy * sizeof(VkExtensionProperties));
+        // memcpy(pProperties, s_deviceExtensions,
+        //       numExtensionsToCopy * sizeof(VkExtensionProperties));
       }
       *pPropertyCount = numExtensionsToCopy;
 
@@ -466,21 +491,21 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdEnumerateDeviceExtensionProperties(
 
   // let's scan the list of extensions from down the chain, and add our unique
   // extensions
-  for (uint32_t extIdx = 0; extIdx < s_numDeviceExtensions; extIdx++) {
-    auto curDeviceExt = s_deviceExtensions[extIdx];
-    bool uniqueExtension = true;
+  // for (uint32_t extIdx = 0; extIdx < s_numDeviceExtensions; extIdx++) {
+  //  auto curDeviceExt = s_deviceExtensions[extIdx];
+  //  bool uniqueExtension = true;
 
-    for (auto extProps : extensions) {
-      if (0 == strcmp(extProps.extensionName, curDeviceExt.extensionName)) {
-        uniqueExtension = false;
-        break;
-      }
-    }
+  //  for (auto extProps : extensions) {
+  //    if (0 == strcmp(extProps.extensionName, curDeviceExt.extensionName)) {
+  //      uniqueExtension = false;
+  //      break;
+  //    }
+  //  }
 
-    if (uniqueExtension) {
-      extensions.push_back(curDeviceExt);
-    }
-  }
+  //  if (uniqueExtension) {
+  //    extensions.push_back(curDeviceExt);
+  //  }
+  //}
 
   if (nullptr == pProperties) {
     // just a count
@@ -545,6 +570,8 @@ VKAPI_ATTR VkResult VKAPI_CALL GwdCreateInstance(
   VkLayerInstanceDispatchTable dispatch_table = {};
   GWD_GETINSTDISPATCHADDR(GetInstanceProcAddr);
   GWD_GETINSTDISPATCHADDR(DestroyInstance);
+  GWD_GETINSTDISPATCHADDR(CreateDebugUtilsMessengerEXT);
+  GWD_GETINSTDISPATCHADDR(DestroyDebugUtilsMessengerEXT);
   GWD_GETINSTDISPATCHADDR(EnumerateDeviceExtensionProperties);
   GWD_GETINSTDISPATCHADDR(EnumeratePhysicalDevices);
 
@@ -699,6 +726,8 @@ GwdGetInstanceProcAddr(VkInstance instance, const char* pName) {
   GWD_GETPROCADDR(GetInstanceProcAddr);
   GWD_GETPROCADDR(CreateInstance);
   GWD_GETPROCADDR(DestroyInstance);
+  GWD_GETPROCADDR(CreateDebugUtilsMessengerEXT);
+  GWD_GETPROCADDR(DestroyDebugUtilsMessengerEXT);
   GWD_GETPROCADDR(EnumerateInstanceLayerProperties);
   GWD_GETPROCADDR(EnumerateInstanceExtensionProperties);
   GWD_GETPROCADDR(EnumeratePhysicalDevices);

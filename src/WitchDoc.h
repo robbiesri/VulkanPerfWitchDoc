@@ -20,8 +20,10 @@
 
 #include <vulkan/vulkan.h>
 
-#include "flat_hash_map.hpp"
+#include <sstream>
+#include <mutex>
 #include <vector>
+#include "flat_hash_map.hpp"
 
 namespace GWD {
 
@@ -39,6 +41,14 @@ class WitchDoctor {
   VkResult PostCallCreateInstance(const VkInstanceCreateInfo* pCreateInfo,
                                   const VkAllocationCallbacks* pAllocator,
                                   VkInstance* pInstance);
+  VkResult PostCallCreateDebugUtilsMessengerEXT(
+      const VkResult inResult, VkInstance instance,
+      VkDebugUtilsMessengerCreateInfoEXT const* pCreateInfo,
+      const VkAllocationCallbacks* pAllocator,
+      VkDebugUtilsMessengerEXT* pMessenger);
+  void PostCallDestroyDebugUtilsMessengerEXT(
+      VkInstance instance, VkDebugUtilsMessengerEXT messenger,
+      const VkAllocationCallbacks* pAllocator);
   VkResult PostCallCreateDevice(VkPhysicalDevice physicalDevice,
                                 const VkDeviceCreateInfo* pCreateInfo,
                                 const VkAllocationCallbacks* pAllocator,
@@ -90,11 +100,36 @@ class WitchDoctor {
   void PopulateInstanceLayerBypassDispatchTable();
   void PopulateDeviceLayerBypassDispatchTable();
 
+  void PerformanceWarningMessage(std::string& message);
+
+  class MessageLogger {
+   public:
+    MessageLogger(WitchDoctor* instance) : m_instance(instance) {}
+
+    ~MessageLogger() {
+      m_stream.flush();
+      // callback_(stream_.str());
+      m_instance->PerformanceWarningMessage(m_stream.str());
+    }
+
+    std::ostream& stream() { return m_stream; }
+
+   private:
+    // std::function<void(const std::string& msg)> callback_;
+    WitchDoctor* m_instance;
+    std::stringstream m_stream;
+  };
+
  private:
   LayerBypassDispatch m_layerBypassDispatch = {};
 
   VkInstance m_instance = VK_NULL_HANDLE;
   VkDevice m_device = VK_NULL_HANDLE;
+
+  std::mutex m_debug_utils_messenger_mutex;
+  ska::flat_hash_map<VkDebugUtilsMessengerEXT,
+                     VkDebugUtilsMessengerCreateInfoEXT>
+      m_debug_utils_messengers;
 
   VkPhysicalDeviceMemoryProperties m_physDevMemProps = {};
   std::vector<bool> m_memTypeIsDeviceLocal;
