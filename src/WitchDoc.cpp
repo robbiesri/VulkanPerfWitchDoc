@@ -30,17 +30,21 @@ void WitchDoctor::PerformanceWarningMessage(std::string& message) {
     VkDebugUtilsMessengerCallbackDataEXT callback_data = {};
     callback_data.sType =
         VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CALLBACK_DATA_EXT;
-    callback_data.pMessage =
-        message.c_str();
+    callback_data.pMessage = message.c_str();
 
     for (const auto& messenger : m_debug_utils_messengers) {
       messenger.second.pfnUserCallback(
           VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT,
-          VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT, &callback_data, messenger.second.pUserData);
+          VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT, &callback_data,
+          messenger.second.pUserData);
     }
   } else {
-      // TODO: Support visual studio outputdebug
+#if defined(WIN32)
+    OutputDebugString(message.c_str());
+    OutputDebugString("\n");
+#else   // defined(WIN32)
     std::cout << message.c_str() << std::endl;
+#endif  // defined(WIN32)
   }
 }
 
